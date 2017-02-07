@@ -36,6 +36,19 @@ ENV HAWKULAR_METRICS_ENDPOINT_PORT="8080" \
 # The http and https ports
 EXPOSE 8080 8444
 
+# Install Hawkular-Metrics Python client, only available on EPEL
+USER root
+RUN yum -y install epel-release \
+    && yum -y install openssl python-pip \
+    && yum clean all \
+    && pip install --no-cache-dir 'hawkular-client==0.4.4'
+
+# Enable http2/spdy
+# TODO: remove when we are running on JDK9 which will already have this support added
+ENV ALPN_VERSION="8.1.7.v20160121"
+RUN curl -Lo $JBOSS_HOME/bin/alpn-boot-$ALPN_VERSION.jar http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/$ALPN_VERSION/alpn-boot-$ALPN_VERSION.jar && \
+    echo 'JAVA_OPTS="$JAVA_OPTS' " -Xbootclasspath/p:$JBOSS_HOME/bin/alpn-boot-$ALPN_VERSION.jar" '"' >> $JBOSS_HOME/bin/standalone.conf
+
 # Get and copy the hawkular metrics war to the deployment directory
 RUN cd $JBOSS_HOME/standalone/deployments/ && \
     curl -Lo hawkular-metrics.ear https://origin-repository.jboss.org/nexus/service/local/artifact/maven/content?r=public\&g=org.hawkular.metrics\&a=hawkular-metrics-openshift-dist\&e=ear\&v=${HAWKULAR_METRICS_VERSION}
@@ -48,12 +61,6 @@ RUN mkdir -p $JBOSS_HOME/modules/system/layers/base/org/jgroups/kubernetes/main 
     curl -O https://repository.jboss.org/nexus/service/local/repositories/central/content/org/jgroups/kubernetes/dns/0.9.0/dns-0.9.0.jar
 COPY modules/org/jgroups/kubernetes/main $JBOSS_HOME/modules/system/layers/base/org/jgroups/kubernetes/main
 COPY modules/org/jgroups/main/module.xml $JBOSS_HOME/modules/system/layers/base/org/jgroups/main/module.xml
-
-# Enable http2/spdy
-# TODO: remove when we are running on JDK9 which will already have this support added
-ENV ALPN_VERSION="8.1.7.v20160121" 
-RUN curl -Lo $JBOSS_HOME/bin/alpn-boot-$ALPN_VERSION.jar http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/$ALPN_VERSION/alpn-boot-$ALPN_VERSION.jar && \
-    echo 'JAVA_OPTS="$JAVA_OPTS' " -Xbootclasspath/p:$JBOSS_HOME/bin/alpn-boot-$ALPN_VERSION.jar" '"' >> $JBOSS_HOME/bin/standalone.conf
 
 # Copy the scripts
 COPY hawkular-metrics-readiness.py \
@@ -74,13 +81,6 @@ COPY standalone.xml $JBOSS_HOME/standalone/configuration/standalone.xml
 
 # Overwrite the default logging.properties file
 COPY logging.properties $JBOSS_HOME/standalone/configuration/logging.properties
-
-# Install Hawkular-Metrics Python client, only available on EPEL
-USER root
-RUN yum -y install epel-release \
-    && yum -y install python-pip \
-    && yum clean all \
-    && pip install --no-cache-dir 'hawkular-client==0.4.4'
 
 # Change the permissions so that the user running the image can start up Hawkular Metrics
 RUN chmod -R 777 /opt

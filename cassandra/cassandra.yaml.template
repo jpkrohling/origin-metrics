@@ -886,7 +886,8 @@ server_encryption_options:
     keystore_password: ${KEYSTORE_PASSWORD}
     truststore: ${TRUSTSTORE_FILE}
     truststore_password: ${TRUSTSTORE_PASSWORD}
-    require_client_auth: ${REQUIRE_NODE_AUTH}
+    require_client_auth: false
+    # require_client_auth: ${REQUIRE_NODE_AUTH}
     #TODO: add back in the EC suites once OpenJDK fixes their encryption issues
     cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
     # More advanced defaults below:
@@ -898,12 +899,12 @@ server_encryption_options:
 
 # enable or disable client/server encryption.
 client_encryption_options:
-    enabled: ${ENABLE_CLIENT_ENCRYPTION}
-    keystore: ${KEYSTORE_FILE}
-    keystore_password: ${KEYSTORE_PASSWORD}
-    require_client_auth: ${REQUIRE_CLIENT_AUTH}
-    truststore: ${TRUSTSTORE_FILE}
-    truststore_password: ${TRUSTSTORE_PASSWORD}
+    #enabled: ${ENABLE_CLIENT_ENCRYPTION}
+    #keystore: ${KEYSTORE_FILE}
+    #keystore_password: ${KEYSTORE_PASSWORD}
+    #require_client_auth: ${REQUIRE_CLIENT_AUTH}
+    #truststore: ${TRUSTSTORE_FILE}
+    #truststore_password: ${TRUSTSTORE_PASSWORD}
     #TODO: add back in the EC suites once OpenJDK fixes their encryption issues
     cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
     # More advanced defaults below:
