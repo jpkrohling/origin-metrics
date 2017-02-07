@@ -34,39 +34,6 @@ do
     --seed_provider_classname=*)
       SEED_PROVIDER_CLASSNAME="${args#*=}"
     ;;
-    --internode_encryption=*)
-      INTERNODE_ENCRYPTION="${args#*=}"
-    ;;
-    --require_node_auth=*)
-      REQUIRE_NODE_AUTH="${args#*=}"
-    ;;
-    --enable_client_encryption=*)
-      ENABLE_CLIENT_ENCRYPTION="${args#*=}"
-    ;;
-    --require_client_auth=*)
-      REQUIRE_CLIENT_AUTH="${args#*=}"
-    ;;
-    --keystore_file=*)
-      KEYSTORE_FILE="${args#*=}"
-    ;;
-    --keystore_password=*)
-      KEYSTORE_PASSWORD="${args#*=}"
-    ;;
-    --keystore_password_file=*)
-      KEYSTORE_PASSWORD_FILE="${args#*=}"
-    ;;
-    --truststore_file=*)
-      TRUSTSTORE_FILE="${args#*=}"
-    ;;
-    --truststore_password=* | --trustsotre_password=*)
-      TRUSTSTORE_PASSWORD="${args#*=}"
-    ;;
-    --truststore_password_file=*)
-      TRUSTSTORE_PASSWORD_FILE="${args#*=}"
-    ;;
-    --cassandra_pem_file=*)
-      CASSANDRA_PEM_FILE="${args#*=}"
-    ;;
     --help)
       HELP=true
     ;;
@@ -96,42 +63,12 @@ if [ -n "$HELP" ]; then
   echo "        the classname to use as the seed provider"
   echo "        default: org.apache.cassandra.locator.SimpleSeedProvider"
   echo
-  echo "  --internode_encryption=[all|none|dc|rack]"
-  echo "        what type of internode encryption should be used"
-  echo "        default: none"
-  echo
-  echo "  --enable_client_encryption=[true|false]"
-  echo "        if client encryption should be enabled"
-  echo "        default: false"
-  echo
-  echo "  --require_node_auth=[true|false]"
-  echo "        if certificate based authentication should be required between nodes"
-  echo "        default: false"
-  echo
-  echo "  --require_client_auth=[true|false]"
-  echo "        if certificate based authentication should be required for client"
-  echo "        default: false"
-  echo
-  echo "  --keystore_file=KEYSTORE_FILE_LOCATION"
-  echo "        the path to where the keystore is located"
-  echo
-  echo "  --keystore_password=KEYSTORE_PASSWORD"
-  echo "        the password to use for the keystore"
-  echo
-  echo "  --keystore_password_file=KEYSTORE_PASSWORD"
-  echo "        a file containing only the keystore password"
-  echo
-  echo "  --truststore_file=TRUSTSTORE_FILE_LOCATION"
-  echo "        the path to where the truststore is located"
-  echo
-  echo "  --truststore_password=TRUSTSTORE_PASSWORD"
-  echo "        the password to use for the truststore"
-  echo
-  echo "  --truststore_password_file=TRUSTSTORE_PASSWORD"
-  echo "        a file containing only the truststore password"
-  echo
   exit 0
 fi
+
+CASSANDRA_HOME=${CASSANDRA_HOME:-"/opt/apache-cassandra"}
+CASSANDRA_CONF=${CASSANDRA_CONF:-"${CASSANDRA_HOME}/conf"}
+CASSANDRA_CONF_FILE=${CASSANDRA_CONF_FILE:-"${CASSANDRA_CONF}/cassandra.yaml"}
 
 if [ -z "${MAX_HEAP_SIZE}" ]; then
   if [ -z "${MEMORY_LIMIT}" ]; then
@@ -175,100 +112,53 @@ else
 fi
 
 #Update the cassandra-env.sh with these new values
-cp /opt/apache-cassandra/conf/cassandra-env.sh.template /opt/apache-cassandra/conf/cassandra-env.sh
-sed -i 's/${MAX_HEAP_SIZE}/'$MAX_HEAP_SIZE'/g' /opt/apache-cassandra/conf/cassandra-env.sh
-sed -i 's/${HEAP_NEWSIZE}/'$HEAP_NEWSIZE'/g' /opt/apache-cassandra/conf/cassandra-env.sh
+cp ${CASSANDRA_CONF}/cassandra-env.sh.template ${CASSANDRA_CONF}/cassandra-env.sh
+sed -i 's/${MAX_HEAP_SIZE}/'$MAX_HEAP_SIZE'/g' ${CASSANDRA_CONF}/cassandra-env.sh
+sed -i 's/${HEAP_NEWSIZE}/'$HEAP_NEWSIZE'/g' ${CASSANDRA_CONF}/cassandra-env.sh
 
-cp /opt/apache-cassandra/conf/cassandra.yaml.template /opt/apache-cassandra/conf/cassandra.yaml
+cp ${CASSANDRA_CONF_FILE}.template ${CASSANDRA_CONF_FILE}
 
 # set the hostname in the cassandra configuration file
-sed -i 's/${HOSTNAME}/'$HOSTNAME'/g' /opt/apache-cassandra/conf/cassandra.yaml
+sed -i 's/${HOSTNAME}/'$HOSTNAME'/g' ${CASSANDRA_CONF_FILE}
 
 # if the seed list is not set, try and get it from the gather-seeds script
 if [ -z "$SEEDS" ]; then
-  source /opt/apache-cassandra/bin/gather-seeds.sh
+  source ${CASSANDRA_HOME}/bin/gather-seeds.sh
 fi
 
 echo "Setting seeds to be ${SEEDS}"
-sed -i 's/${SEEDS}/'$SEEDS'/g' /opt/apache-cassandra/conf/cassandra.yaml
+sed -i 's/${SEEDS}/'$SEEDS'/g' ${CASSANDRA_CONF_FILE}
 
 # set the cluster name if set, default to "test_cluster" if not set
 if [ -n "$CLUSTER_NAME" ]; then
-    sed -i 's/${CLUSTER_NAME}/'$CLUSTER_NAME'/g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's/${CLUSTER_NAME}/'$CLUSTER_NAME'/g' ${CASSANDRA_CONF_FILE}
 else
-    sed -i 's/${CLUSTER_NAME}/test_cluster/g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's/${CLUSTER_NAME}/test_cluster/g' ${CASSANDRA_CONF_FILE}
 fi
 
 # set the data volume if set, otherwise use the CASSANDRA_HOME location, otherwise default to '/cassandra_data'
 if [ -n "$DATA_VOLUME" ]; then
-    sed -i 's#${DATA_VOLUME}#'$DATA_VOLUME'#g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's#${DATA_VOLUME}#'$DATA_VOLUME'#g' ${CASSANDRA_CONF_FILE}
 elif [ -n "$CASSANDRA_HOME" ]; then
     DATA_VOLUME="$CASSANDRA_HOME/data"
-    sed -i 's#${DATA_VOLUME}#'$CASSANDRA_HOME'/data#g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's#${DATA_VOLUME}#'$CASSANDRA_HOME'/data#g' ${CASSANDRA_CONF_FILE}
 else
     DATA_VOLUME="/cassandra_data"
-    sed -i 's#${DATA_VOLUME}#/cassandra_data#g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's#${DATA_VOLUME}#/cassandra_data#g' ${CASSANDRA_CONF_FILE}
 fi
 
 # set the commitlog volume if set, otherwise use the DATA_VOLUME value instead
 if [ -n "$COMMITLOG_VOLUME" ]; then
-  sed -i 's#${COMMITLOG_VOLUME}#'$COMMITLOG_VOLUME'#g' /opt/apache-cassandra/conf/cassandra.yaml
+  sed -i 's#${COMMITLOG_VOLUME}#'$COMMITLOG_VOLUME'#g' ${CASSANDRA_CONF_FILE}
 else
-  sed -i 's#${COMMITLOG_VOLUME}#'$DATA_VOLUME'#g' /opt/apache-cassandra/conf/cassandra.yaml
+  sed -i 's#${COMMITLOG_VOLUME}#'$DATA_VOLUME'#g' ${CASSANDRA_CONF_FILE}
 fi
 
 # set the seed provider class name, otherwise default to the SimpleSeedProvider
 if [ -n "$SEED_PROVIDER_CLASSNAME" ]; then
-    sed -i 's#${SEED_PROVIDER_CLASSNAME}#'$SEED_PROVIDER_CLASSNAME'#g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's#${SEED_PROVIDER_CLASSNAME}#'$SEED_PROVIDER_CLASSNAME'#g' ${CASSANDRA_CONF_FILE}
 else
-    sed -i 's#${SEED_PROVIDER_CLASSNAME}#org.apache.cassandra.locator.SimpleSeedProvider#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-# setup and configure the security setting
-if [ -n "$INTERNODE_ENCRYPTION" ]; then
-   sed -i 's#${INTERNODE_ENCRYPTION}#'$INTERNODE_ENCRYPTION'#g' /opt/apache-cassandra/conf/cassandra.yaml
-else
-   sed -i 's#${INTERNODE_ENCRYPTION}#none#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-if [ -n "$ENABLE_CLIENT_ENCRYPTION" ]; then
-   sed -i 's#${ENABLE_CLIENT_ENCRYPTION}#'$ENABLE_CLIENT_ENCRYPTION'#g' /opt/apache-cassandra/conf/cassandra.yaml
-else
-   sed -i 's#${ENABLE_CLIENT_ENCRYPTION}#false#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-if [ -n "$REQUIRE_NODE_AUTH" ]; then
-   sed -i 's#${REQUIRE_NODE_AUTH}#'$REQUIRE_NODE_AUTH'#g' /opt/apache-cassandra/conf/cassandra.yaml
-else
-   sed -i 's#${REQUIRE_NODE_AUTH}#false#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-if [ -n "$REQUIRE_CLIENT_AUTH" ]; then
-   sed -i 's#${REQUIRE_CLIENT_AUTH}#'$REQUIRE_CLIENT_AUTH'#g' /opt/apache-cassandra/conf/cassandra.yaml
-else
-   sed -i 's#${REQUIRE_CLIENT_AUTH}#false#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-# handle setting up the keystore
-if [ -n "$KEYSTORE_FILE" ]; then
-   sed -i 's#${KEYSTORE_FILE}#'$KEYSTORE_FILE'#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-if [ -n "$KEYSTORE_PASSWORD_FILE" ]; then
-   KEYSTORE_PASSWORD=$(cat $KEYSTORE_PASSWORD_FILE)
-fi
-if [ -n "$KEYSTORE_PASSWORD" ]; then
-   sed -i 's#${KEYSTORE_PASSWORD}#'$KEYSTORE_PASSWORD'#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-
-# handle setting up the truststore
-if [ -n "$TRUSTSTORE_FILE" ]; then
-   sed -i 's#${TRUSTSTORE_FILE}#'$TRUSTSTORE_FILE'#g' /opt/apache-cassandra/conf/cassandra.yaml
-fi
-if [ -n "$TRUSTSTORE_PASSWORD_FILE" ]; then
-   TRUSTSTORE_PASSWORD=$(cat $TRUSTSTORE_PASSWORD_FILE)
-fi
-if [ -n "$TRUSTSTORE_PASSWORD" ]; then
-   sed -i 's#${TRUSTSTORE_PASSWORD}#'$TRUSTSTORE_PASSWORD'#g' /opt/apache-cassandra/conf/cassandra.yaml
+    sed -i 's#${SEED_PROVIDER_CLASSNAME}#org.apache.cassandra.locator.SimpleSeedProvider#g' ${CASSANDRA_CONF_FILE}
 fi
 
 # create the cqlshrc file so that cqlsh can be used much more easily from the system
@@ -276,13 +166,7 @@ mkdir -p $HOME/.cassandra
 cat >> $HOME/.cassandra/cqlshrc << DONE
 [connection]
 hostname= $HOSTNAME
-factory = cqlshlib.ssl.ssl_transport_factory
 port = 9042
-
-[ssl]
-certfile = ${CASSANDRA_PEM_FILE}
-userkey = ${CASSANDRA_PEM_FILE}
-usercert = ${CASSANDRA_PEM_FILE}
 DONE
 
 # verify that we are not trying to run an older version of Cassandra which has been configured for a newer version.
@@ -303,11 +187,10 @@ if [ -f ${CASSANDRA_DATA_VOLUME}/.cassandra.version ]; then
     fi
 fi
 
-if [ -n "$CASSANDRA_HOME" ]; then
-  # remove -R once CASSANDRA-12641 is fixed
-  exec ${CASSANDRA_HOME}/bin/cassandra -f -R
-else
-  # remove -R once CASSANDRA-12641 is fixed
-  exec /opt/apache-cassandra/bin/cassandra -f -R
-fi
-
+echo "------------ Version 1"
+echo "----------------------------------------------------"
+echo "cassandra.yaml"
+cat ${CASSANDRA_CONF_FILE}
+echo "----------------------------------------------------"
+# remove -R once CASSANDRA-12641 is fixed
+exec ${CASSANDRA_HOME}/bin/cassandra -f -R

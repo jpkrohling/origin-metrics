@@ -44,13 +44,6 @@
                 </authorization>
             </security-realm>
             <security-realm name="ApplicationRealm">
-                <server-identities>
-                    <ssl>
-                        <keystore path="${HAWKULAR_METRICS_KEYSTORE,javax.net.ssl.keyStore}" 
-                                  keystore-password="${HAWKULAR_METRICS_KEYSTORE_PASSWORD,javax.net.ssl.keyStorePassword}"
-                                 alias="${HAWKULAR_METRICS_KEYSTORE_ALIAS:hawkular-metrics}"/>
-                    </ssl>
-                </server-identities>
                 <authentication>
                     <local default-user="$local" allowed-users="*" skip-group-loading="true"/>
                     <properties path="application-users.properties" relative-to="jboss.server.config.dir"/>
@@ -324,13 +317,6 @@
                     <protocol type="FD_SOCK" socket-binding="jgroups-udp-fd"/>
                     <protocol type="FD_ALL"/>
                     <protocol type="VERIFY_SUSPECT"/>
-                    <protocol type="SYM_ENCRYPT">
-                      <property name="encrypt_entire_message">true</property>
-                      <property name="sym_algorithm">AES</property>
-                      <property name="keystore_name">hawkular-jgroups.keystore</property>
-                      <property name="store_password">#JGROUPS_KEYSTORE_PASSWORD#</property>
-                      <property name="alias">#JGROUPS_ALIAS#</property>
-                    </protocol>
                     <protocol type="pbcast.NAKACK2"/>
                     <protocol type="UNICAST3"/>
                     <protocol type="pbcast.STABLE"/>
@@ -346,13 +332,6 @@
                     <protocol type="FD_SOCK" socket-binding="jgroups-tcp-fd"/>
                     <protocol type="FD"/>
                     <protocol type="VERIFY_SUSPECT"/>
-                    <protocol type="SYM_ENCRYPT">
-                      <property name="encrypt_entire_message">true</property>
-                      <property name="sym_algorithm">AES</property>
-                      <property name="keystore_name">hawkular-jgroups.keystore</property>
-                      <property name="store_password">#JGROUPS_KEYSTORE_PASSWORD#</property>
-                      <property name="alias">#JGROUPS_ALIAS#</property>
-                    </protocol>
                     <protocol type="pbcast.NAKACK2"/>
                     <protocol type="UNICAST3"/>
                     <protocol type="pbcast.STABLE"/>
@@ -452,8 +431,7 @@
             <buffer-cache name="default"/>
             <server name="default-server">
                 <ajp-listener name="ajp" socket-binding="ajp"/>
-                <http-listener name="default" socket-binding="http" redirect-socket="https" enable-http2="true"/>
-                <https-listener name="https" socket-binding="https" security-realm="ApplicationRealm" enable-http2="true"/>
+                <http-listener name="default" socket-binding="http" enable-http2="true"/>
                 <host name="default-host" alias="localhost">
                     <location name="/" handler="welcome-content"/>
                     <filter-ref name="server-header"/>

@@ -881,14 +881,11 @@ request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 # http://download.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore
 #
 server_encryption_options:
-    internode_encryption: ${INTERNODE_ENCRYPTION}
-    keystore: ${KEYSTORE_FILE}
-    keystore_password: ${KEYSTORE_PASSWORD}
-    truststore: ${TRUSTSTORE_FILE}
-    truststore_password: ${TRUSTSTORE_PASSWORD}
-    require_client_auth: ${REQUIRE_NODE_AUTH}
-    #TODO: add back in the EC suites once OpenJDK fixes their encryption issues
-    cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
+    internode_encryption: none
+    keystore: conf/.keystore
+    keystore_password: cassandra
+    truststore: conf/.truststore
+    truststore_password: cassandra
     # More advanced defaults below:
     # protocol: TLS
     # algorithm: SunX509
@@ -898,14 +895,15 @@ server_encryption_options:
 
 # enable or disable client/server encryption.
 client_encryption_options:
-    enabled: ${ENABLE_CLIENT_ENCRYPTION}
-    keystore: ${KEYSTORE_FILE}
-    keystore_password: ${KEYSTORE_PASSWORD}
-    require_client_auth: ${REQUIRE_CLIENT_AUTH}
-    truststore: ${TRUSTSTORE_FILE}
-    truststore_password: ${TRUSTSTORE_PASSWORD}
-    #TODO: add back in the EC suites once OpenJDK fixes their encryption issues
-    cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
+    enabled: false
+    # If enabled and optional is set to true encrypted and unencrypted connections are handled.
+    optional: false
+    keystore: conf/.keystore
+    keystore_password: cassandra
+    # require_client_auth: false
+    # Set trustore and truststore_password if require_client_auth is true
+    # truststore: conf/.truststore
+    # truststore_password: cassandra
     # More advanced defaults below:
     # protocol: TLS
     # algorithm: SunX509

@@ -36,6 +36,8 @@ objects:
     labels:
       metrics-infra: hawkular-metrics
       name: hawkular-metrics
+    annotations:
+      "service.alpha.openshift.io/serving-cert-secret-name": hawkular-metrics-secrets
   spec:
     selector:
       name: hawkular-metrics
@@ -77,14 +79,12 @@ objects:
           - "-b"
           - 0.0.0.0
           - "-Dhawkular.metrics.cassandra.nodes=hawkular-cassandra"
-          - "-Dhawkular.metrics.cassandra.use-ssl"
           - "-Dhawkular.metrics.openshift.auth-methods=openshift-oauth,htpasswd"
           - "-Dhawkular.metrics.openshift.htpasswd-file=/secrets/hawkular-metrics.htpasswd.file"
           - "-Dhawkular.metrics.allowed-cors-access-control-allow-headers=authorization"
           - "-Dhawkular.metrics.default-ttl=${METRIC_DURATION}"
           - "-Dhawkular.metrics.admin-tenant=_hawkular_admin"
           - "-Dhawkular-alerts.cassandra-nodes=hawkular-cassandra"
-          - "-Dhawkular-alerts.cassandra-use-ssl"
           - "-Dhawkular.alerts.openshift.auth-methods=openshift-oauth,htpasswd"
           - "-Dhawkular.alerts.openshift.htpasswd-file=/secrets/hawkular-metrics.htpasswd.file"
           - "-Dhawkular.alerts.allowed-cors-access-control-allow-headers=authorization"
@@ -93,13 +93,6 @@ objects:
           - "-Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true"
           - "-DKUBERNETES_MASTER_URL=${MASTER_URL}"
           - "-DUSER_WRITE_ACCESS=${USER_WRITE_ACCESS}"
-          - "--hmw.keystore=/secrets/hawkular-metrics.keystore"
-          - "--hmw.truststore=/secrets/hawkular-metrics.truststore"
-          - "--hmw.keystore_password_file=/secrets/hawkular-metrics.keystore.password"
-          - "--hmw.truststore_password_file=/secrets/hawkular-metrics.truststore.password"
-          - "--hmw.jgroups_keystore=/secrets/hawkular-metrics.jgroups.keystore"
-          - "--hmw.jgroups_keystore_password_file=/secrets/hawkular-metrics.jgroups.keystore.password"
-          - "--hmw.jgroups_alias_file=/secrets/hawkular-metrics.jgroups.alias"
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -118,8 +111,6 @@ objects:
           volumeMounts:
           - name: hawkular-metrics-secrets
             mountPath: "/secrets"
-          - name: hawkular-metrics-client-secrets
-            mountPath: "/client-secrets"
           readinessProbe:
             exec:
               command:
@@ -132,6 +123,3 @@ objects:
         - name: hawkular-metrics-secrets
           secret:
             secretName: hawkular-metrics-secrets
-        - name: hawkular-metrics-client-secrets
-          secret:
-            secretName: hawkular-metrics-account
