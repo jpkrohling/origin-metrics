@@ -57,8 +57,16 @@ else
 fi
 sed -i "s|<!-- ##ADDITIONAL LOGGERS## -->|$additional_loggers|g" ${JBOSS_HOME}/standalone/configuration/standalone.xml
 
+if [ "x${JGROUPS_PASSWORD}" == "x" ]; then
+    echo "ATTENTION ATTENTION ATTENTION ATTENTION"
+    echo "The environment variable JGROUPS_PASSWORD was not set and we are generating one."
+    echo "This means that each Hawkular instance will have its own password and won't be able to form a cluster."
+    JGROUPS_PASSWORD=$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)
+fi
+
 exec 2>&1 /opt/jboss/wildfly/bin/standalone.sh \
   -Djboss.node.name=$HOSTNAME \
+  -Djgroups.password=${JGROUPS_PASSWORD} \
   -b `hostname -i` \
   -bprivate `hostname -i` \
   $@
