@@ -39,7 +39,7 @@ EXPOSE 8080 8444
 # Install Hawkular-Metrics Python client, only available on EPEL
 USER root
 RUN yum -y install epel-release \
-    && yum -y install python-pip \
+    && yum -y install openssl python-pip \
     && yum clean all \
     && pip install --no-cache-dir 'hawkular-client==0.4.4'
 
@@ -91,4 +91,4 @@ USER 1000
 RUN cd $JBOSS_HOME/modules/system/layers/base/org/jgroups/main && \
     curl https://repo1.maven.org/maven2/org/jgroups/jgroups/3.6.12.Final/jgroups-3.6.12.Final.jar -o jgroups-3.6.10.Final.jar
 
-CMD $HAWKULAR_METRICS_SCRIPT_DIRECTORY/hawkular-metrics-wrapper.sh -b 0.0.0.0 -Dhawkular-metrics.cassandra-nodes=hawkular-cassandra
+CMD $HAWKULAR_METRICS_SCRIPT_DIRECTORY/hawkular-metrics-wrapper.sh -b 0.0.0.0
