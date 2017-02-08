@@ -44,6 +44,13 @@
                 </authorization>
             </security-realm>
             <security-realm name="ApplicationRealm">
+                <server-identities>
+                    <ssl>
+                        <keystore path="${HAWKULAR_METRICS_KEYSTORE,javax.net.ssl.keyStore}"
+                                  keystore-password="${HAWKULAR_METRICS_KEYSTORE_PASSWORD,javax.net.ssl.keyStorePassword}"
+                                  alias="${HAWKULAR_METRICS_KEYSTORE_ALIAS:hawkular-metrics}"/>
+                    </ssl>
+                </server-identities>
                 <authentication>
                     <local default-user="$local" allowed-users="*" skip-group-loading="true"/>
                     <properties path="application-users.properties" relative-to="jboss.server.config.dir"/>
@@ -455,7 +462,8 @@
             <buffer-cache name="default"/>
             <server name="default-server">
                 <ajp-listener name="ajp" socket-binding="ajp"/>
-                <http-listener name="default" socket-binding="http" enable-http2="true"/>
+                <http-listener name="default" socket-binding="http" redirect-socket="https" enable-http2="true"/>
+                <https-listener name="https" socket-binding="https" security-realm="ApplicationRealm" enable-http2="true"/>
                 <host name="default-host" alias="localhost">
                     <location name="/" handler="welcome-content"/>
                     <filter-ref name="server-header"/>
