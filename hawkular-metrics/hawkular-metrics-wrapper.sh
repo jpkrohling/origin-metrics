@@ -32,9 +32,11 @@ KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a
 TRUSTSTORE_FILE=${TRUSTSTORE_FILE:-"${KEYSTORE_DIR}/hawkular-metrics.truststore"}
 TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)}
 
+SERVICE_ALIAS=${SERVICE_ALIAS:-"hawkular-metrics"}
 SERVICE_CERT=${SERVICE_CERT:-"/secrets/tls.crt"}
 SERVICE_CERT_KEY=${SERVICE_CERT_KEY:-"/secrets/tls.key"}
 SERVICE_CA=${SERVICE_CA:-"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"}
+SERVICE_CA_ALIAS=${SERVICE_CA_ALIAS:-"services-ca"}
 
 PKCS12_FILE=${PKCS12_FILE:-"${KEYSTORE_DIR}/hawkular-metrics.pkcs12"}
 KEYTOOL_COMMAND="/usr/lib/jvm/java-1.8.0/jre/bin/keytool"
@@ -53,7 +55,7 @@ else
 fi
 
 echo "Creating the Hawkular Metrics PKCS12 keystore"
-openssl pkcs12 -export -in ${SERVICE_CERT} -inkey ${SERVICE_CERT_KEY} -out ${PKCS12_FILE} -name hawkular-metrics -noiter -nomaciter -password pass:${KEYSTORE_PASSWORD}
+openssl pkcs12 -export -in ${SERVICE_CERT} -inkey ${SERVICE_CERT_KEY} -out ${PKCS12_FILE} -name ${SERVICE_ALIAS} -noiter -nomaciter -password pass:${KEYSTORE_PASSWORD}
 if [ $? != 0 ]; then
     echo "Failed to create a PKCS12 certificate file with the service-specific certificate. Aborting."
     exit 1
@@ -66,8 +68,15 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
+echo "Importing service CA into the keystore"
+${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${KEYSTORE_FILE} -trustcacerts -storepass ${KEYSTORE_PASSWORD}
+if [ $? != 0 ]; then
+    echo "Failed to import the service CA into the keystore. Aborting."
+    exit 1
+fi
+
 echo "Importing the Service CA into the trust store"
-${KEYTOOL_COMMAND} -noprompt -import -alias services-ca -file ${SERVICE_CA} -keystore ${TRUSTSTORE_FILE} -trustcacerts -storepass ${TRUSTSTORE_PASSWORD}
+${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${TRUSTSTORE_FILE} -trustcacerts -storepass ${TRUSTSTORE_PASSWORD}
 if [ $? != 0 ]; then
     echo "Failed to import the Service CA into the trust store. Aborting."
     exit 1
