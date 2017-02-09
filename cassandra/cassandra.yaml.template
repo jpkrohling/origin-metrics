@@ -894,12 +894,12 @@ server_encryption_options:
 
 # enable or disable client/server encryption.
 client_encryption_options:
-    enabled: false
+    enabled: true
     # If enabled and optional is set to true encrypted and unencrypted connections are handled.
     optional: false
     keystore: ${KEYSTORE_FILE}
     keystore_password: ${KEYSTORE_PASSWORD}
-    require_client_auth: true
+    require_client_auth: false
     truststore: ${TRUSTSTORE_CLIENTS_FILE}
     truststore_password: ${TRUSTSTORE_CLIENTS_PASSWORD}
     # More advanced defaults below:

@@ -35,7 +35,12 @@ TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A
 SERVICE_ALIAS=${SERVICE_ALIAS:-"hawkular-metrics"}
 SERVICE_CERT=${SERVICE_CERT:-"/secrets/tls.crt"}
 SERVICE_CERT_KEY=${SERVICE_CERT_KEY:-"/secrets/tls.key"}
-SERVICE_CA=${SERVICE_CA:-"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"}
+
+CA=${CA:-"/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"}
+CA_ALIAS=${CA_ALIAS:-"openshift-ca"}
+
+SERVICE_CA=${SERVICE_CA:-"${KEYSTORE_DIR}/cas-to-import01"}
+SERVICE_CA_ORIGINAL=${SERVICE_CA_ORIGINAL:-"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"}
 SERVICE_CA_ALIAS=${SERVICE_CA_ALIAS:-"services-ca"}
 
 PKCS12_FILE=${PKCS12_FILE:-"${KEYSTORE_DIR}/hawkular-metrics.pkcs12"}
@@ -45,7 +50,7 @@ KEYTOOL_COMMAND="/usr/lib/jvm/java-1.8.0/jre/bin/keytool"
 token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 url="${MASTER_URL}/api/${KUBERNETES_API_VERSION}/namespaces/${POD_NAMESPACE}/replicationcontrollers/hawkular-metrics"
 
-status_code=$(curl --cacert ${SERVICE_CA} --max-time 10 --connect-timeout 10 -L -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${token}" $url)
+status_code=$(curl --cacert ${SERVICE_CA_ORIGINAL} --max-time 10 --connect-timeout 10 -L -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${token}" $url)
 if [ "$status_code" != 200 ]; then
   echo "Error: the service account for Hawkular Metrics does not have permission to view resources in this namespace. View permissions are required for Hawkular Metrics to function properly."
   echo "Usually this can be resolved by running: oc adm policy add-role-to-user view system:serviceaccount:${POD_NAMESPACE}:hawkular -n ${POD_NAMESPACE}"
@@ -68,12 +73,19 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-echo "Importing service CA into the keystore"
-${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${KEYSTORE_FILE} -trustcacerts -storepass ${KEYSTORE_PASSWORD}
+# the next few lines deserve an explanation: the service-ca.crt provided by OpenShift contains the root CA and the
+# service-ca certificates in a single file. Java's keytool can't handle this, it seems, and ends up importing only
+# the first one. So, we split the file, having one cert per resulting file. The next lines are for that, and
+# will only work properly on the scenario described. If the scenario ever changes, the next lines will probably
+# need to be adapted accordingly. The best solution would be to have one cert per file.
+PREV_DIR=${PWD}
+cd ${KEYSTORE_DIR}
+csplit -z -f cas-to-import ${SERVICE_CA_ORIGINAL} '/-----BEGIN CERTIFICATE-----/' '{*}' > /dev/null
 if [ $? != 0 ]; then
-    echo "Failed to import the service CA into the keystore. Aborting."
+    echo "Failed to split the original service-ca into individual cert files. Aborting."
     exit 1
 fi
+cd ${PREV_DIR}
 
 echo "Importing the Service CA into the trust store"
 ${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${TRUSTSTORE_FILE} -trustcacerts -storepass ${TRUSTSTORE_PASSWORD}
@@ -109,6 +121,8 @@ if [ "x${JGROUPS_PASSWORD}" == "x" ]; then
 fi
 
 cat > ${HAWKULAR_METRICS_DIRECTORY}/server.properties << EOL
+javax.net.ssl.keyStorePassword=${KEYSTORE_PASSWORD}
+javax.net.ssl.trustStorePassword=${TRUSTSTORE_PASSWORD}
 EOL
 
 exec 2>&1 /opt/jboss/wildfly/bin/standalone.sh \
@@ -116,9 +130,7 @@ exec 2>&1 /opt/jboss/wildfly/bin/standalone.sh \
   -Djgroups.password=${JGROUPS_PASSWORD} \
   -Djavax.net.ssl.keyStore=${KEYSTORE_FILE} \
   -Djavax.net.ssl.trustStore=${TRUSTSTORE_FILE} \
-  -Djavax.net.debug=ssl \
-  -Djavax.net.ssl.keyStorePassword=${KEYSTORE_PASSWORD} \
-  -Djavax.net.ssl.trustStorePassword=${TRUSTSTORE_PASSWORD} \
+  -P ${HAWKULAR_METRICS_DIRECTORY}/server.properties \
   -b `hostname -i` \
   -bprivate `hostname -i` \
   $@
