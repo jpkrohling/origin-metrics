@@ -79,7 +79,7 @@ objects:
           - "--tls_cert=/secrets/tls.crt"
           - "--tls_key=/secrets/tls.key"
           - "--tls_client_ca=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-          - "--allowed_users=system:master-proxy"
+          - "--allowed_users=%allowed_users%"
           - "--metric_resolution=${METRIC_RESOLUTION}"
           env:
           - name: STARTUP_TIMEOUT

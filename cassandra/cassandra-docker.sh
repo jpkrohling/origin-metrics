@@ -148,6 +148,18 @@ SERVICE_CA_ALIAS=${SERVICE_CA_ALIAS:-"services-ca"}
 PKCS12_FILE=${PKCS12_FILE:-"${KEYSTORE_DIR}/cassandra.pkcs12"}
 KEYTOOL_COMMAND="/usr/lib/jvm/java-1.8.0/jre/bin/keytool"
 
+## some extra cassandra.yaml options
+## those options can be overridden, but shouldn't be changed without tweaking the
+## options above
+INTERNODE_ENCRYPTION=${INTERNODE_ENCRYPTION:-"all"}
+ENABLE_CLIENT_ENCRYPTION=${ENABLE_CLIENT_ENCRYPTION:-"true"}
+
+## the certs provided by OpenShift have a flag explicitly forbidding it from being used as client certs
+## so, we default to false, but allow users to override, should a SERVICE_CERT be provided that can be used
+## as client cert as well as server cert
+REQUIRE_NODE_AUTH=${REQUIRE_NODE_AUTH:-"false"}
+REQUIRE_CLIENT_AUTH=${REQUIRE_CLIENT_AUTH:-"false"}
+
 ## set up the keystore, where our own keys are kept
 echo "Creating the Cassandra keystore from the Secret's cert data"
 openssl pkcs12 -export -in ${SERVICE_CERT} -inkey ${SERVICE_CERT_KEY} -out ${PKCS12_FILE} -name ${SERVICE_ALIAS} -noiter -nomaciter -password pass:${KEYSTORE_PASSWORD}
@@ -287,6 +299,10 @@ sed -i 's#${TRUSTSTORE_NODES_FILE}#'${TRUSTSTORE_NODES_FILE}'#g' ${CASSANDRA_CON
 sed -i 's#${TRUSTSTORE_NODES_PASSWORD}#'${TRUSTSTORE_NODES_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
 sed -i 's#${TRUSTSTORE_CLIENTS_FILE}#'${TRUSTSTORE_CLIENTS_FILE}'#g' ${CASSANDRA_CONF_FILE}
 sed -i 's#${TRUSTSTORE_CLIENTS_PASSWORD}#'${TRUSTSTORE_CLIENTS_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${INTERNODE_ENCRYPTION}#'${INTERNODE_ENCRYPTION}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${ENABLE_CLIENT_ENCRYPTION}#'${ENABLE_CLIENT_ENCRYPTION}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${REQUIRE_NODE_AUTH}#'${REQUIRE_NODE_AUTH}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${REQUIRE_CLIENT_AUTH}#'${REQUIRE_CLIENT_AUTH}'#g' ${CASSANDRA_CONF_FILE}
 
 # create the cqlshrc file so that cqlsh can be used much more easily from the system
 mkdir -p $HOME/.cassandra

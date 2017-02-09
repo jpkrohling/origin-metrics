@@ -20,11 +20,11 @@ function deploy_heapster() {
   
   # Use existing or generate new Heapster certificates
   if [ -n "${HEAPSTER_CERT:-}" ]; then
-    echo "${HEAPSTER_CERT:-}" | base64 -d > $dir/tls.cert
+    echo "${HEAPSTER_CERT:-}" | base64 -d > $dir/tls.crt
     echo "${HEAPSTER_KEY:-}" | base64 -d > $dir/tls.key
   elif  [ -s ${secret_dir}/heapster.cert ]; then
       # use files from secret if present
-      cp ${secret_dir}/tls.cert $dir
+      cp ${secret_dir}/tls.crt $dir
       cp ${secret_dir}/tls.key $dir
   fi
 
