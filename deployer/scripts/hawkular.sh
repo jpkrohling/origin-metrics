@@ -21,8 +21,8 @@ function deploy_hawkular() {
   htpasswd -cb $dir/hawkular-metrics.htpasswd hawkular $hawkular_metrics_password 
 
   echo
-  echo "Creating the Hawkular Metrics User Account Secret file"
-  cat > hawkular-metrics-account.json <<EOF
+  echo "Creating the Hawkular Metrics User Account Secrets"
+  cat > $dir/hawkular-metrics-account.json <<EOF
       {
         "apiVersion": "v1",
         "kind": "Secret",
