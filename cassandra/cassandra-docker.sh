@@ -145,9 +145,6 @@ SERVICE_CA=${SERVICE_CA:-"${CASSANDRA_CONF}/cas-to-import01"}
 SERVICE_CA_ORIGINAL=${SERVICE_CA_ORIGINAL:-"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"}
 SERVICE_CA_ALIAS=${SERVICE_CA_ALIAS:-"services-ca"}
 
-CA=${CA:-"/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"}
-CA_ALIAS=${CA_ALIAS:-"openshift-ca"}
-
 PKCS12_FILE=${PKCS12_FILE:-"${KEYSTORE_DIR}/cassandra.pkcs12"}
 KEYTOOL_COMMAND="/usr/lib/jvm/java-1.8.0/jre/bin/keytool"
 
@@ -185,16 +182,11 @@ if [ $? != 0 ]; then
 fi
 
 ## set up the trust store for the client communication
-## we trust all certs issued by the service-ca and the openshift-ca
+## we trust all certs issued by the service-ca
 echo "Building the trust store for client communication"
 ${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${TRUSTSTORE_CLIENTS_FILE} -trustcacerts -storepass ${TRUSTSTORE_CLIENTS_PASSWORD}
 if [ $? != 0 ]; then
     echo "Failed to import the Service CA cert for client communication. Aborting."
-    exit 1
-fi
-${KEYTOOL_COMMAND} -noprompt -import -alias ${CA_ALIAS} -file ${CA} -keystore ${TRUSTSTORE_CLIENTS_FILE} -trustcacerts -storepass ${TRUSTSTORE_CLIENTS_PASSWORD}
-if [ $? != 0 ]; then
-    echo "Failed to import the CA cert for client communication. Aborting."
     exit 1
 fi
 
