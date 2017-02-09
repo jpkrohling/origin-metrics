@@ -95,8 +95,6 @@ rm -rf $dir && mkdir -p $dir && chmod 700 $dir || :
 mkdir -p $secret_dir && chmod 700 $secret_dir || :
 
 hawkular_metrics_hostname=${HAWKULAR_METRICS_HOSTNAME:-hawkular-metrics.example.com}
-hawkular_metrics_alias=${HAWKULAR_METRICS_ALIAS:-hawkular-metrics}
-hawkular_cassandra_alias=${HAWKULAR_CASSANDRA_ALIAS:-hawkular-cassandra}
 
 # set up configuration for client
 if [ -n "${WRITE_KUBECONFIG:-}" ]; then
