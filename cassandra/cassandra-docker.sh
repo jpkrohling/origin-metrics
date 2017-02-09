@@ -131,8 +131,11 @@ KEYSTORE_DIR=${KEYSTORE_DIR:-"${CASSANDRA_CONF}"}
 KEYSTORE_FILE=${KEYSTORE_FILE:-"${KEYSTORE_DIR}/.keystore"}
 KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)}
 
-TRUSTSTORE_FILE=${TRUSTSTORE_FILE:-"${KEYSTORE_DIR}/.truststore"}
-TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)}
+TRUSTSTORE_NODES_FILE=${TRUSTSTORE_NODES_FILE:-"${KEYSTORE_DIR}/.nodes.truststore"}
+TRUSTSTORE_NODES_PASSWORD=${TRUSTSTORE_NODES_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)}
+
+TRUSTSTORE_CLIENTS_FILE=${TRUSTSTORE_CLIENTS_FILE:-"${KEYSTORE_DIR}/.clients.truststore"}
+TRUSTSTORE_CLIENTS_PASSWORD=${TRUSTSTORE_CLIENTS_PASSWORD:-$(head /dev/urandom -c 512 | tr -dc A-Z-a-z-0-9 | head -c 17)}
 
 SERVICE_ALIAS=${SERVICE_ALIAS:-"cassandra"}
 SERVICE_CERT=${SERVICE_CERT:-"/secrets/tls.crt"}
@@ -172,17 +175,26 @@ cd ${CASSANDRA_CONF}
 csplit -z -f cas-to-import ${SERVICE_CA_ORIGINAL} '/-----BEGIN CERTIFICATE-----/' '{*}' > /dev/null
 cd ${PREV_DIR}
 
-## set up the trust store
-## we trust all certs issued by the service-ca and the openshift-ca
-echo "Building the trust store"
-${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${TRUSTSTORE_FILE} -trustcacerts -storepass ${TRUSTSTORE_PASSWORD}
+## set up the trust store for the inter node communication
+## we trust only our own cert
+echo "Building the trust store for inter node communication"
+${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_ALIAS} -file ${SERVICE_CERT} -keystore ${TRUSTSTORE_NODES_FILE} -trustcacerts -storepass ${TRUSTSTORE_NODES_PASSWORD}
 if [ $? != 0 ]; then
     echo "Failed to build the trust store by importing the service CA. Aborting."
     exit 1
 fi
-${KEYTOOL_COMMAND} -noprompt -import -alias ${CA_ALIAS} -file ${CA} -keystore ${TRUSTSTORE_FILE} -trustcacerts -storepass ${TRUSTSTORE_PASSWORD}
+
+## set up the trust store for the client communication
+## we trust all certs issued by the service-ca and the openshift-ca
+echo "Building the trust store for client communication"
+${KEYTOOL_COMMAND} -noprompt -import -alias ${SERVICE_CA_ALIAS} -file ${SERVICE_CA} -keystore ${TRUSTSTORE_CLIENTS_FILE} -trustcacerts -storepass ${TRUSTSTORE_CLIENTS_PASSWORD}
 if [ $? != 0 ]; then
-    echo "Failed to import the main CA. Aborting."
+    echo "Failed to import the Service CA cert for client communication. Aborting."
+    exit 1
+fi
+${KEYTOOL_COMMAND} -noprompt -import -alias ${CA_ALIAS} -file ${CA} -keystore ${TRUSTSTORE_CLIENTS_FILE} -trustcacerts -storepass ${TRUSTSTORE_CLIENTS_PASSWORD}
+if [ $? != 0 ]; then
+    echo "Failed to import the CA cert for client communication. Aborting."
     exit 1
 fi
 
@@ -279,8 +291,10 @@ fi
 
 sed -i 's#${KEYSTORE_FILE}#'${KEYSTORE_FILE}'#g' ${CASSANDRA_CONF_FILE}
 sed -i 's#${KEYSTORE_PASSWORD}#'${KEYSTORE_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
-sed -i 's#${TRUSTSTORE_FILE}#'${TRUSTSTORE_FILE}'#g' ${CASSANDRA_CONF_FILE}
-sed -i 's#${TRUSTSTORE_PASSWORD}#'${TRUSTSTORE_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${TRUSTSTORE_NODES_FILE}#'${TRUSTSTORE_NODES_FILE}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${TRUSTSTORE_NODES_PASSWORD}#'${TRUSTSTORE_NODES_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${TRUSTSTORE_CLIENTS_FILE}#'${TRUSTSTORE_CLIENTS_FILE}'#g' ${CASSANDRA_CONF_FILE}
+sed -i 's#${TRUSTSTORE_CLIENTS_PASSWORD}#'${TRUSTSTORE_CLIENTS_PASSWORD}'#g' ${CASSANDRA_CONF_FILE}
 
 # create the cqlshrc file so that cqlsh can be used much more easily from the system
 mkdir -p $HOME/.cassandra

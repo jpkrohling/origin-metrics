@@ -884,8 +884,8 @@ server_encryption_options:
     internode_encryption: all
     keystore: ${KEYSTORE_FILE}
     keystore_password: ${KEYSTORE_PASSWORD}
-    truststore: ${TRUSTSTORE_FILE}
-    truststore_password: ${TRUSTSTORE_PASSWORD}
+    truststore: ${TRUSTSTORE_NODES_FILE}
+    truststore_password: ${TRUSTSTORE_NODES_PASSWORD}
     # protocol: TLS
     # algorithm: SunX509
     # store_type: JKS
@@ -900,8 +900,8 @@ client_encryption_options:
     keystore: ${KEYSTORE_FILE}
     keystore_password: ${KEYSTORE_PASSWORD}
     require_client_auth: true
-    truststore: ${TRUSTSTORE_FILE}
-    truststore_password: ${TRUSTSTORE_PASSWORD}
+    truststore: ${TRUSTSTORE_CLIENTS_FILE}
+    truststore_password: ${TRUSTSTORE_CLIENTS_PASSWORD}
     # More advanced defaults below:
     # protocol: TLS
     # algorithm: SunX509
