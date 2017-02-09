@@ -128,9 +128,9 @@ function validate_deployed_project() {
 }
 
 function test_deployed_accounts() {
-  # test that secrets and service accounts exist
+  # test that service accounts exist
   local object missing=false objects=(secret/heapster-secrets serviceaccount/heapster)
-  [ -z "${HEAPSTER_STANDALONE:-}" ] && objects+=( secret/{hawkular-metrics-secrets,hawkular-metrics-certificate,hawkular-metrics-account,hawkular-cassandra-secrets,hawkular-cassandra-certificate} serviceaccount/{hawkular,cassandra} )
+  [ -z "${HEAPSTER_STANDALONE:-}" ] && objects+=( serviceaccount/{hawkular,cassandra} )
   for object in "${objects[@]}"; do
     if ! output=$(check_exists "$object"); then
       missing=true

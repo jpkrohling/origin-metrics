@@ -88,11 +88,8 @@ token_file=${TOKEN_FILE:-/var/run/secrets/kubernetes.io/serviceaccount/token}
 
 # directory to perform all the processing
 dir=${PROCESSING_DIR:-_output} #directory used to write files which generating certificates
-# location of deployer secret mount
-secret_dir=${SECRET_DIR:-_secret}
-# ensure directories exist in local use case
+# ensure directory exist in local use case
 rm -rf $dir && mkdir -p $dir && chmod 700 $dir || :
-mkdir -p $secret_dir && chmod 700 $secret_dir || :
 
 hawkular_metrics_hostname=${HAWKULAR_METRICS_HOSTNAME:-hawkular-metrics.example.com}
 

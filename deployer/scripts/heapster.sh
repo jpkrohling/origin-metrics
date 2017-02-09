@@ -15,18 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 function deploy_heapster() {
-  
-  # Use existing or generate new Heapster certificates
-  if [ -n "${HEAPSTER_CERT:-}" ]; then
-    echo "${HEAPSTER_CERT:-}" | base64 -d > $dir/tls.crt
-    echo "${HEAPSTER_KEY:-}" | base64 -d > $dir/tls.key
-  elif  [ -s ${secret_dir}/heapster.cert ]; then
-      # use files from secret if present
-      cp ${secret_dir}/tls.crt $dir
-      cp ${secret_dir}/tls.key $dir
-  fi
+  secret_dir="/extra-secrets"
+  mkdir -p $secret_dir && chmod 700 $secret_dir || :
 
   # Get the Heapster allowed users
   if [ -n "${HEAPSTER_ALLOWED_USERS:-}" ]; then
@@ -37,41 +28,29 @@ function deploy_heapster() {
     echo "system:master-proxy" > $dir/heapster_allowed_users
   fi
 
-  # Get the Heapster Client CA
-  if [ -n "${HEAPSTER_CLIENT_CA:-}" ]; then
-    echo "${HEAPSTER_CLIENT_CA:-}" | base64 -d > $dir/heapster_client_ca.cert
-  elif [ -s ${secret_dir}/heapster-client-ca.cert ]; then
-    cp ${secret_dir}/heapster-client-ca.cert $dir/heapster_client_ca.cert
-  else #use the service account ca by default
-    cp ${master_ca} $dir/heapster_client_ca.cert
-  fi
-
   echo
-  echo "Creating the Heapster Secrets configuration json file"
-  cat > $dir/heapster-secrets.json <<EOF
+  echo "Creating the Heapster Extra Secrets configuration json file"
+  cat > $dir/heapster-extra-secrets.json <<EOF
       {
         "apiVersion": "v1",
         "kind": "Secret",
         "metadata":
-        { "name": "heapster-secrets",
+        { "name": "heapster-extra-secrets",
           "labels": {
             "metrics-infra": "heapster"
           }
         },
         "data":
         {
-          "heapster.cert": "$(base64 -w 0 $dir/heapster.cert)",
-          "heapster.key": "$(base64 -w 0 $dir/heapster.key)",
-          "heapster.client-ca": "$(base64 -w 0 $dir/heapster_client_ca.cert)",
           "heapster.allowed-users":"$(base64 -w 0 $dir/heapster_allowed_users)"
         }
       }
 EOF
   
   echo "Installing the Heapster Component."
-     
-  echo "Creating the Heapster secret"
-  oc create -f $dir/heapster-secrets.json
+
+  echo "Creating the extra Heapster secret"
+  oc create -f $dir/heapster-extra-secrets.json
   
   echo "Creating the Heapster template"
   if [ -n "${HEAPSTER_STANDALONE:-}" ]; then

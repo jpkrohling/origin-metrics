@@ -46,7 +46,7 @@ objects:
       metrics-infra: heapster
       name: heapster
     annotations:
-      "service.alpha.openshift.io/serving-cert-secret-name": heapster-secrets
+      "service.alpha.openshift.io/serving-cert-secret-name": heapster-cert-secret
   spec:
     selector:
       name: heapster
@@ -96,6 +96,8 @@ objects:
           volumeMounts:
           - name: heapster-secrets
             mountPath: "/secrets"
+          - name: heapster-extra-secrets
+            mountPath: "/extra-secrets"
           - name: hawkular-metrics-account
             mountPath: "/hawkular-account"
           readinessProbe:
@@ -106,6 +108,9 @@ objects:
         - name: heapster-secrets
           secret:
             secretName: heapster-secrets
+        - name: heapster-extra-secrets
+          secret:
+            secretName: heapster-extra-secrets
         - name: hawkular-metrics-account
           secret:
             secretName: hawkular-metrics-account

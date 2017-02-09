@@ -133,15 +133,15 @@ objects:
         - name: hawkular-metrics-secrets
           secret:
             secretName: hawkular-metrics-secrets
-- apiVersion: v1
-  kind: Route
-  metadata:
-    creationTimestamp: null
-    name: hawkular-metrics-route
-  spec:
-    tls:
-      insecureEdgeTerminationPolicy: Allow
-      termination: reencrypt
-    to:
-      kind: Service
-      name: hawkular-metrics
+#- apiVersion: v1
+#  kind: Route
+#  metadata:
+#    creationTimestamp: null
+#    name: hawkular-metrics-route
+#  spec:
+#    tls:
+#      insecureEdgeTerminationPolicy: Allow
+#      termination: reencrypt
+#    to:
+#      kind: Service
+#      name: hawkular-metrics

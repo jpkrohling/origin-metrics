@@ -58,7 +58,7 @@ EOF
 
   # this may return an error code if the route already exists, this is to be expect with a refresh and is why we have the || true here
   ## once BZ 1401081 is done, the Route specified on `hawkular-metrics.yaml` should work and this command here should be removed.
-  oc create route hawkular-metrics || true
+  oc create route passthrough --service hawkular-metrics || true
 
   if [ "${use_persistent_storage}" = true ]; then
     if [ "${dynamically_provision_storage}" = true ]; then
